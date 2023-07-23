@@ -1,6 +1,4 @@
-create DATABASE travelapp;
-
-use travelapp;
+use railway;
 
 DROP TABLE IF EXISTS user;
 CREATE TABLE user (
