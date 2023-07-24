@@ -2,6 +2,7 @@ package travel.app.controller;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+// import org.telegram.telegrambots.meta.api.objects.Update;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObjectBuilder;
+// import jakarta.mail.MessagingException;
 import travel.app.model.PlannerModel.CombinedModel;
 import travel.app.model.PlannerModel.Planner;
 import travel.app.model.WeatherApiModel.TempInfo;
@@ -31,6 +34,7 @@ import travel.app.model.WeatherApiModel.WeatherTempInfo;
 import travel.app.model.dto.LoginDTO;
 import travel.app.service.RepoService.EmailService;
 import travel.app.service.RepoService.PlannerService;
+// import travel.app.service.RepoService.TelegramService;
 import travel.app.service.RepoService.UserService;
 import travel.app.service.WeatherService.WeatherException;
 import travel.app.service.WeatherService.WeatherService;
@@ -54,6 +58,9 @@ public class RestController {
 
     @Autowired
     EmailService emailSvc;
+
+    // @Autowired
+    // TelegramService telegramSvc;
 
     @PostMapping(path = "/entry")
     @ResponseBody
@@ -91,13 +98,14 @@ public class RestController {
         int emailId = userSvc.getEmailId(email);
         String url = ""; // if no file url empty string
 
+        // Send email to user
         String message = "Date: %s, %s, city of interest %s".formatted(dateTime, description, city);
         emailSvc.sendEmail(email, message);
 
         // File upload & generate url
-        if(file != null)
-         url = plannerSvc.uploadFileByUser(file).toString();
-        
+        if (file != null)
+            url = plannerSvc.uploadFileByUser(file).toString();
+
         // Form upload & generate pid
         int pid = plannerSvc.addPlanByUser(dateTime, description, city, destinationType, email, url);
         // Setup planner
@@ -126,6 +134,7 @@ public class RestController {
 
         plannerList = plannerSvc.getPlanByUser(emailId);
 
+        // enhanced for loop for weather data
         for (Planner planner : plannerList) {
             String city = planner.getCity();
             List<WeatherTempInfo> weatherTempInfoList;
@@ -160,8 +169,8 @@ public class RestController {
                 });
             } catch (WeatherException e) {
                 System.out.println(Json.createObjectBuilder()
-                .add("error", e.getMessage())
-                .build().toString());
+                        .add("error", e.getMessage())
+                        .build().toString());
             }
         }
         return ResponseEntity.ok(combinedModelList);
@@ -169,10 +178,21 @@ public class RestController {
 
     @DeleteMapping("/main")
     @ResponseBody
-    public ResponseEntity<String> deleteEntryFromRepo(@RequestParam int pid){
+    public ResponseEntity<Map<String, Object>> deleteEntryFromRepo(@RequestParam int pid) {
         plannerSvc.delPlanByUser(pid);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("message", pid + " is deleted from the repository");
         
-        return ResponseEntity.ok(pid + " is deleted from the repository");
+        return ResponseEntity.ok(resp);    
     }
+
+    // // telegram hook
+    // @RequestMapping("/telegram/webhook")
+    // public void handleTelegramUpdate(@RequestBody Update update) throws MessagingException {
+    //     System.out.print("Update received");
+
+    //     telegramSvc.onUpdateReceived(update);
+    // }
 
 }

@@ -29,6 +29,7 @@ public class WeatherController {
     @Autowired
 	private WeatherService weatherSvc;
 
+	// for inital test
 	@GetMapping(path="/weather")
 	@ResponseBody
 	public ResponseEntity<String> getWeather(@RequestParam String city) {
